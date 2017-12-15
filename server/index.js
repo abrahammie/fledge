@@ -44,7 +44,7 @@ passport.use(
         },
         (err, user) => done(err, user)
       );
-      done(null, user);
+      done(null, profile);
     }
   )
 );
@@ -70,7 +70,7 @@ app.get('/auth/google',
 );
 
 app.get('/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/' }),
+  passport.authenticate('google', { failureRedirect: '/' }, ((err, user) => done(err, user))),
   (req, res) =>
     res.redirect('/')
 );
