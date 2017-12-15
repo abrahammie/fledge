@@ -44,6 +44,7 @@ passport.use(
         },
         (err, user) => done(err, user)
       );
+      done(null, user);
     }
   )
 );
@@ -70,10 +71,9 @@ app.get('/auth/google',
 
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/' }),
-  (req, res) => done(res));
-//     res.redirect('/');
-//   }
-// );
+  (req, res) =>
+    res.redirect('/')
+);
 
 app.post('/api/applications', (req, res) => {
   var userId = req.user.googleId;
