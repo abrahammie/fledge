@@ -72,6 +72,7 @@ app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/' }),
   (req, res) => {
     res.redirect('/');
+    done(res);
   }
 );
 
