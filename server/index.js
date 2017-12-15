@@ -70,11 +70,10 @@ app.get('/auth/google',
 
 app.get('/auth/google/callback',
   passport.authenticate('google', { failureRedirect: '/' }),
-  (req, res) => {
-    res.redirect('/');
-    done(res);
-  }
-);
+  (req, res) => done(res));
+//     res.redirect('/');
+//   }
+// );
 
 app.post('/api/applications', (req, res) => {
   var userId = req.user.googleId;
