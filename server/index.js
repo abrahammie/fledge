@@ -139,7 +139,7 @@ app.get('/logout', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.sendFile(__dirname + '../dist/index.html');
+  res.sendFile(path.join(__dirname + '../dist/'));
 });
 
 app.post('/api/reminders', (req, res) => {
