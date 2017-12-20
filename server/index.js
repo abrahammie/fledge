@@ -137,7 +137,9 @@ app.get('/api/reminders', (req, res) => {
 app.get('/logged', (req, res) => {
   if (req.isAuthenticated()) {
     res.send(req.isAuthenticated());
+    res.sendStatus(200);
   } else {
+    res.send(req.isAuthenticated());
     res.sendStatus(401);
   }
 });
