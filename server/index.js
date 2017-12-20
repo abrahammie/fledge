@@ -142,7 +142,9 @@ app.get('/logged', (req, res) => {
   }
 });
 
-
+app.get('/', (req, res) => {
+  res.sendFile(__dirname + '../dist/index.html');
+});
 
 app.post('/api/reminders', (req, res) => {
 
