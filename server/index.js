@@ -1,8 +1,8 @@
+const expressSession = require('express-session');
 const express = require('express');
 const bodyParser = require('body-parser');
 const path = require('path');
 const passport = require('passport');
-const expressSession = require('express-session');
 const GoogleStrategy = require('passport-google-oauth').OAuth2Strategy;
 const db = require('../db/index.js');
 const helpers = require('../db/helpers.js');
@@ -14,6 +14,7 @@ var fs = require('fs');
 const app = express();
 
 require('dotenv').config();
+
 
 app.set('port', process.env.PORT || 2000);
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -27,60 +28,44 @@ app.use(
   })
 );
 app.use(passport.initialize());
-app.use(passport.session());
+app.use(passport.expressSession());
 
-passport.use(
-  new GoogleStrategy(
-    {
-      clientID: process.env.GOOGLE_CLIENT_ID,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-      callbackURL: process.env.LOCAL_GOOGLE_REDIRECT || 'https://fledge-heroku-test.herokuapp.com/auth/google/callback',
-      passReqToCallback: true,
-    },
-    // lookup or create a new user using the googleId (no associated username or password)
-    (accessToken, refreshToken, profile, done) => {
-      let clientSecret = process.env.GOOGLE_CLIENT_SECRET;
-      let clientId = process.env.GOOGLE_CLIENT_ID;
-      let redirectUrl = process.env.LOCAL_GOOGLE_REDIRECT || 'https://fledge-heroku-test.herokuapp.com/auth/google/callback';
-      let auth = new googleAuth();
-      oauth2Client = new auth.OAuth2(clientId, clientSecret, redirectUrl);
-      let tokenObj = { access_token: accessToken, refresh_token: refreshToken }
-      oauth2Client.credentials = tokenObj;
 
-      helpers.findOrCreateUser(
-        {
-          username: profile.displayName,
-          photoUrl: profile.photos[0].value,
-          googleId: profile.id,
-          sessionID: profile.sessionID,
-        },
-        (err, user) => done(err, user)
-      );
-    }
-  )
-);
-
-passport.serializeUser((user, done) => {
-  done(null, user.id);
+//Set up google login protocol
+passport.use(new GoogleStrategy({
+  clientID: process.env.GOOGLE_CLIENT_ID,
+  clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+  callbackURL: process.env.LOCAL_GOOGLE_REDIRECT,
+  passReqToCallback: true
+  },
+  //lookup or create a new user using the googleId (no associated username or password)
+  function(req, accessToken, refreshToken, profile, done) {
+    db.findOrCreateUser({ googleId: profile.id, sessionID: req.sessionID }, function (err, user) {
+      return done(err, user);
+    });
+  }
+));
+passport.serializeUser(function(user, done) {
+  done(null, user._id);
 });
-
-passport.deserializeUser((id, done) => {
-  db.User.findById(id, (err, user) => {
-    done(null, user);
+passport.deserializeUser(function(_id, done) {
+  db.User.findById(_id, function(err, user) {
+    done(err, user);
   });
 });
 
+app.use(passport.initialize());
+//set up the route to Google for authentication
 app.get('/auth/google', passport.authenticate('google', {
-    scope: [
+  scope: [
       'https://www.googleapis.com/auth/plus.login',
       'https://www.googleapis.com/auth/drive',
       'https://www.googleapis.com/auth/calendar',
-    ],
-  })
-);
-
-app.get('/auth/google/callback', passport.authenticate('google', { failureRedirect: '/logged' }), function(req, res) {
-    res.redirect('/logged');
+      ]
+}));
+//set up the return handler after Google has authenticated
+app.get('/auth/google/callback', passport.authenticate('google', {failureRedirect: '/' }), function(req, res) {
+    res.redirect('/');
 });
 
 app.post('/api/applications', (req, res) => {
@@ -142,6 +127,15 @@ app.get('/logged', (req, res) => {
     res.send(req.isAuthenticated());
     res.sendStatus(401);
   }
+});
+
+app.get('/logout', (req, res) => {
+  req.expressSession.destroy((err) => {
+    if (err) {
+      console.log('error on logout: ', err);
+    }
+    res.send();
+  });
 });
 
 app.get('/', (req, res) => {
@@ -212,22 +206,3 @@ app.listen(app.get('port'), () =>
   console.log('app running on port', app.get('port'))
 );
 
-
-/*
-// need to refactor client side logout
-app.get('/logout', (req, res) => {
-  console.log("LOGOUT CALLED SERVER")
-  req.session.destroy((err) => {
-    if (err) {
-      console.log('error on logout: ', err);
-      res.send(false);
-    } else {
-      res.send(true);
-    }
-  });
-});
-*/
-
-// app.get('*', function(req, res) {
-//   res.render
-// })
