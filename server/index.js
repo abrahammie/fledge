@@ -35,7 +35,7 @@ passport.use(
       clientID: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
       callbackURL: process.env.LOCAL_GOOGLE_REDIRECT || 'https://fledge-heroku-test.herokuapp.com/auth/google/callback',
-      proxy: true,
+      passReqToCallback: true,
     },
     // lookup or create a new user using the googleId (no associated username or password)
     (accessToken, refreshToken, profile, done) => {
@@ -81,13 +81,9 @@ app.get(
   })
 );
 
-app.get(
-  '/auth/google/callback',
-  passport.authenticate('google', { failureRedirect: '/' }),
-  (req, res) => {
-    res.redirect('/logged');
-  }
-);
+app.get('/auth/google/callback', passport.authenticate('google', {failureRedirect: '/' }), function(req, res) {
+    res.redirect('/');
+});
 
 app.post('/api/applications', (req, res) => {
   var userId = req.user.googleId;
